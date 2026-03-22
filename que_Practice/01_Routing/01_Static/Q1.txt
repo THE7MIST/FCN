@@ -1,0 +1,28 @@
+
+🔹 1) Simple Level — Basic Static Route
+
+Problem
+
+Create a network with:
+
+2 Routers (R1, R2)
+
+2 PCs (PC1, PC2)
+
+
+🌐 Topology
+
+PC1 — R1 — R2 — PC2
+
+📌 IP Scheme
+
+Device Interface IP Address
+
+PC1 - 192.168.1.2/24
+R1 G0/0 192.168.1.1/24
+R1 G0/1 10.0.0.1/30
+R2 G0/0 10.0.0.2/30
+R2 G0/1 192.168.2.1/24
+PC2 - 192.168.2.2/24
+
+
