@@ -1,0 +1,279 @@
+ROUTING Commonds
+````````````````
+
+RIP - router rip
+      v 2 
+      network x.x.x.x
+      no auto summary
+
+EIGRP - router eigrp 10 (A.S. no. should be same on all routers)
+        network x.x.x.x
+   	no auto summary
+
+OSPF -  router ospf 4 (Process ID should be same on all routers)
+	network x.x.x.x x.x.x.x(wild-card) area 0 (router to router), any area(1,2,3,4) on fastethernet
+	
+DHCP Commonds
+`````````````
+ip dhcp pool lan1 (same for other lans on one router itself)
+network x.x.x.x x.x.x.x(subnet)
+default-network x.x.x.x
+do wr
+
+ip helper address x.x.x.x (on other router,network to which dhcp is directly connected)
+
+
+ACL 
+```
+Standard - On destination Router (3rd Router)
+
+access-list 10 deny host x.x.x.x(source ip individual one pc) 
+access-list 10 permit any 
+int fa 0/0
+ip access-group 10 out
+
+
+Extendard - On source Router (1st Router)
+
+access-list 100 deny tcp host x.x.x.x (source ip individual one pc) host x.x.x.x (destination int fa 0/0 of 3rd router) eq telnet 
+
+access-list 100 permit ip any any
+
+int fa 0/0
+ip access-group 100 in 
+
+
+PAP and CHAP 
+````````````
+On 1st Router 
+
+hostname R1
+username R2 password abc
+int se x/x
+ip addr x.x.x.x x.x.x.x
+no shut
+encapsulation ppp
+ppp authentication pap 
+
+ppp pap sent-username R1 password abc
+
+On 2nd Router 
+
+hostname R2 
+username R1 password abc
+int se x/x
+ip addr x.x.x.x x.x.x.x
+no shut 
+encapsulation ppp
+ppp authentication pap   ( for chap replace ppp with chap ) 
+
+ppp pap sent -username R2 password abc
+
+to check - show run 
+
+Dynamic NAT - On 1st Router
+``````````` 
+
+access-list 10 permit 192.168.x.0 0.0.0.255
+ip nat pool ditiss 10.0.0.4 10.0.0.6 netmask 255.0.0.0
+ip nat inside source list 10 pool ditiss
+int fa 0/0
+ip nat inside 
+int se 1/0
+ip nat outside 
+
+PAT - NAT - On 1st Router
+`````````
+access-list 10 permit 192.168.x.0 0.0.0.255
+ip nat pool ditiss 10.0.0.4 10.0.0.4 netmask 255.0.0.0
+ip nat inside source list 10 pool ditiss overload 
+int fa 0/0
+ip nat inside 
+int se 1/0
+ip nat outside 
+
+
+IPv6 (Perform on Router 2811)
+````
+
+On Router 1 
+
+ipv6 unicast-routing 
+int fa 0/0
+ipv6 add 2000::1/64
+no shut
+int se 1/0
+ipv6 add 2001::1/64
+no shut
+ipv6 router eigrp 10 
+router-id 1.1.1.1
+no shut
+int fa 0/0
+ipv6 eigrp 10 
+int se 1/0
+ipv6 eigrp 10
+
+On Router 2
+
+int se 1/0
+ipv6 add 2001::2/64
+no shut
+int fa 0/0
+ipv6 add 2002::1/64
+no shut
+ipv6 router eigrp 10
+router-id 2.2.2.2
+no shut 
+int fa 0/0
+ipv6 eigrp 10
+int se 1/0
+ipv6 eigrp 10 
+
+To see routing - do sh ipv6 route
+
+
+RIP routing on IPv6
+
+router 1
+int fa 0/0
+ipv6 rip RIPng enable 
+no shut
+int se 1/0
+ipv6 rip RIPng enable
+no shut
+
+same on router 2 
+
+VLAN - on switch
+````
+
+vlan 10 
+name ditiss 
+int fa x/x
+switch access vlan 10
+
+vlan 20 
+name vlsi 
+int fa x/x
+switch access vlan 20
+
+to communicate with other router vlan 10, 20
+
+switchport mode trunk (swtich to switch port)
+
+
+VTP
+```
+Switch 1 ( By default server mode )
+vtp domain dac
+vtp password xx
+vtp version 2 
+
+Switch 2 
+vtp mode client 
+vtp domain dac
+vtp password xx
+vtp version 2
+
+show vlan brief 
+
+Inter VLAN Routing 
+
+Take 1 routers 
+
+(switchport mode trunk) switch - router port
+
+Router on stick ( router to which switch is connected ) 
+
+int fa 0/0
+no shut
+
+int fa 0/0. 10
+encapsulation dot1Q10
+ip addr x.x.10.1 x.x.x.x
+int fa 0/0. 20
+ip addr x.x.20.1 x.x.x.x
+
+
+STP 
+```
+
+change the priority 
+switch(config)# spanning-tree vlan1 priority 4096
+
+Set a root 
+switch(config)# spanning-tree vlan1 root primary
+
+
+TACACS 
+``````
+aaa new model
+itiss password 1234
+aaa authentication login default group tacacs local 
+tacacs-server host x.x.20.1 (Port address of router connected to server) key 1234
+
+line vtp 0 4
+login authentication default 
+exit
+
+aaa authorization exec default group tacacs local 
+
+
+RADIUS
+``````
+
+username xxx password xxx 
+radius-server host x.x.20.2 (radius server IP)
+radius server key xxx
+area new model 
+area authentication login defaults group radius local 
+
+line vty 0 4 
+login authentication default 
+exit 
+ 
+
+Lubantu (Mininet)
+`````````````````
+
+Basic Commonds of mininet 
+h1 ifconfig 
+h2 ping h1 
+h1 ping h2 
+h1 ip addr
+nodes 
+net
+exit (exit mininet cli)
+sudo mn-c (clean mininet remove stale network)
+
+
+sudo mn --topo minimal 
+
+Single topology - single switch 
+```````````````````````````````
+
+sudo mn --topo single,4  (single switch 4 host)
+sudo mn --topo single,3 (single switch 3 host)
+
+Linear topology - 2 switch 
+```````````````````````````
+
+mn --topo linear  (2 switch, 1 host)
+
+sudo mn  --topo linear,3 (3 switch & 1 host per switch)
+sudo mn  --topo linear,2,3 (2 switch & 3 host per switch)
+
+topology goes like this h1s1 h1s2 h1s3........
+if ping from 3rd to 1st then h1s3 ping h1s1
+
+Tree topology
+`````````````
+sudo mn --topo tree, depth = 2, fanout = 2 
+
+fanout - host per switch 
+
+sudo mn --topo tree depth = 3, fanout = 3
+
+ 
+
+ 
